@@ -19,8 +19,6 @@ class AI_Assistant:
         self.full_transcript = [
             {"role": "system", "content": "You are an interviewer at a software company. Be resourceful and efficient."},
         ]
-        
-        # Initialize speech recognizer
         self.recognizer = sr.Recognizer()
 
     def speak_text(self, text):
@@ -107,11 +105,11 @@ class AI_Assistant:
             print(f"Error generating audio: {e}")
 
     def create_audio_stream(self, text):
-        # Placeholder for creating an audio stream
+        
         return None
 
     def play_audio_stream(self, audio_stream):
-        # Placeholder for playing an audio stream
+        
         pass
 
 # Usage example
