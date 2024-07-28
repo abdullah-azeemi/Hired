@@ -27,21 +27,6 @@ class AI_Assistant:
         print('\n' + text)
         engine.runAndWait()
 
-    def start_transcription(self):
-        print("Listening... Press Ctrl+C to stop.")
-        with sr.Microphone() as source:
-            self.recognizer.adjust_for_ambient_noise(source, duration=0.2)
-            try:
-                while True:
-                    print("Listening...")
-                    audio = self.recognizer.listen(source)
-                    text = self.recognize_audio(audio)
-                    if text:
-                        print("Transcribed Text:", text)
-                        self.generate_ai_response(text)
-            except KeyboardInterrupt:
-                print("Recording stopped.")
-
     def recognize_audio(self, audio):
         try:
             return self.recognizer.recognize_google(audio).lower()
@@ -61,9 +46,10 @@ class AI_Assistant:
         if response:
             print(f"Raw AI Response: {response}")  # Debug print
             ai_response = response['candidates'][0]['content']['parts'][0]['text']
-            self.generate_audio(ai_response)
+            return ai_response
         else:
             print("No response from AI service")
+            return "Sorry, I couldn't understand the question."
 
     def query_gemini(self, text):
         headers = {
@@ -89,31 +75,3 @@ class AI_Assistant:
         except requests.exceptions.RequestException as e:
             print(f"Error querying AI service: {e}")
             return None
-
-    def generate_audio(self, text):
-        self.full_transcript.append({"role": "assistant", "content": text})
-        print(f"\nAI Interviewer: {text}")
-
-        try:
-            # Use an alternative method to generate audio if `generate` and `stream` are not available
-            audio_stream = self.create_audio_stream(text)
-            if audio_stream:
-                self.play_audio_stream(audio_stream)
-            else:
-                print("Error: No audio stream returned")
-        except Exception as e:
-            print(f"Error generating audio: {e}")
-
-    def create_audio_stream(self, text):
-        
-        return None
-
-    def play_audio_stream(self, audio_stream):
-        
-        pass
-
-# Usage example
-greeting = "Thank you for applying to our company. I am here to interview you. Give me your introduction"
-ai_assistant = AI_Assistant()
-ai_assistant.speak_text(greeting)
-ai_assistant.start_transcription()

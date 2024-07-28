@@ -1,63 +1,70 @@
-from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from .models import hash_password, check_password, create_token, save_conversation
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_from_directory, flash
 from .ai_assistant import AI_Assistant
 
 main = Blueprint('main', __name__)
 
-@main.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+ai_assistant = AI_Assistant()
 
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+@main.route('/')
+def index():
+    return render_template('main.html')
 
-    db = current_app.db
-    if db.users.find_one({"username": username}):
-        return jsonify({"error": "User already exists"}), 400
-
-    hashed_password = hash_password(password)
-    db.users.insert_one({"username": username, "password": hashed_password})
-    return jsonify({"message": "User created successfully"}), 201
-
-@main.route('/signin', methods=['POST'])
+@main.route('/signin', methods=['GET', 'POST'])
 def signin():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        if verify_user(email, password):  
+            return redirect(url_for('main.form'))
+        else:
+            flash('Invalid email or password')
+    return render_template('signin.html')
 
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+@main.route('/form', methods=['GET', 'POST'])
+def form():
+    if request.method == 'POST':
+        answer1 = request.form['answer1']
+        answer2 = request.form['answer2']
+        process_answers(answer1, answer2) 
+        return redirect(url_for('main.thanks'))
+    return render_template('form.html')
 
-    db = current_app.db
-    user = db.users.find_one({"username": username})
-    if not user or not check_password(password, user['password']):
-        return jsonify({"error": "Invalid credentials"}), 401
+@main.route('/ai')
+def ai():
+    return render_template('Ai.html')
 
-    token = create_token(identity=username)
-    return jsonify({"token": token}), 200
+@main.route('/interviewer')
+def interviewer():
+    return render_template('interviewer.html')
 
-@main.route('/start_interview', methods=['POST'])
-@jwt_required()
-def start_interview():
-    current_user = get_jwt_identity()
-    ai_assistant = AI_Assistant()
-    greeting = "Thank you for applying to our company. I am here to interview you. Give me your introduction"
+@main.route('/thanks')
+def thanks():
+    return render_template('thanks.html')
+
+@main.route('/process_ai', methods=['POST'])
+def process_ai():
+    data = request.json
+    question = data.get('question')
     
-    ai_assistant.speak_text(greeting)
-    ai_assistant.start_transcription()
+    # Get the AI response
+    ai_response = ai_assistant.generate_ai_response(question)
     
-    save_conversation(current_app.db, current_user, ai_assistant.full_transcript)
-    return jsonify({"message": "Interview started"}), 200
+    return jsonify({'response': ai_response})
 
-@main.route('/test_db', methods=['GET'])
-def test_db():
-    db = current_app.db
-    try:
-        db.command('ping')
-        return jsonify({"message": "Successfully connected to MongoDB"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@main.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('../static', filename)
 
+def verify_user(email, password):
+    # Implement user verification logic here
+    # Example: check against database
+    return True
+
+def process_answers(answer1, answer2):
+    # Implement answer processing logic here
+    # Example: save to database or send to AI model for analysis
+    pass
+
+def ai_interview_response(question):
+    response = ai_assistant.generate_ai_response(question)
+    return response

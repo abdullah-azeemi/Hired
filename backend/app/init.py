@@ -1,37 +1,28 @@
 from flask import Flask
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
-from .config import Config
-
-bcrypt = Bcrypt()
-jwt = JWTManager()
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import os
+from .routes import main
 
 def create_app():
-    print("Creating Flask app")
-    app = Flask(__name__)
-    app.config.from_object(Config)
+    app = Flask(__name__, static_folder='./static')
+    bcrypt = Bcrypt(app)
+    jwt = JWTManager(app)
 
-    print("Initializing Bcrypt and JWTManager")
-    bcrypt.init_app(app)
-    jwt.init_app(app)
-
-    print("Connecting to MongoDB")
-    uri = app.config['MONGO_URI']
-    db_name = 'test'
+    # Connect to MongoDB
+    uri = "mongodb+srv://abdullahmusharaf200:60JMTqE3R2xhRQOz@aitutor.3v9fdyy.mongodb.net/?retryWrites=true&w=majority&appName=AITutor"
     client = MongoClient(uri, server_api=ServerApi('1'))
 
-    # Send a ping to confirm a successful connection
     try:
         client.admin.command('ping')
         print("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
         print(e)
 
-    app.db = client[db_name]  # Explicitly use the database name
+    app.db = client.get_database("test")  
 
-    from .routes import main
     app.register_blueprint(main)
 
     return app
